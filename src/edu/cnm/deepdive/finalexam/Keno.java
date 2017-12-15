@@ -1,76 +1,133 @@
 package edu.cnm.deepdive.finalexam;
 
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Partial implementation of a simple Keno game, with a payout table specified in
- * resources/payouts.txt
+ * Developed to generate a Keno game complete with payout.  Will read standard input for basic
+ * checking input for duplications.
+ *
+ * @authors: Caryl, Edge and Paula.
  */
 public class Keno {
 
-  /** Classpath-relative location of payouts file. */
-  public static final String PAYOUTS_RESOURCE = "resources/payouts.txt";
-  /** Minimum value (inclusive) in number pool (and minimum valid pick). */
-  public static final int MIN_VALUE = 1;
-  /** Maximum value (inclusive) in number pool (and maximum valid pick). */
-  public static final int MAX_VALUE = 80;
-
-  private PayoutTable payoutTable;
+  /**
+   * Used to save input string.
+   */
+  private static String[] strs;
+  /**
+   * Used to keep track of wins.
+   */
+  private static int indexWin;
+  /** Used to parse user selections. */
+  static int[] userSelection;
+  /** Used to determine if selection is a winner. */
+  static List<Integer> computerSelection = new ArrayList<>();
 
   /**
-   * Entry point for Keno application. 
-   *  
+   * Read input with buffer reader.  Provide user with help option
+   * if questions symbol or help is entered.
+   * Check for duplicates.
    * @param args
-   * @throws IOException
-   * @throws URISyntaxException
    */
-  public static void main(String[] args) throws IOException, URISyntaxException {
-    ClassLoader loader = Keno.class.getClassLoader();
-    new Keno(Paths.get(loader.getResource(PAYOUTS_RESOURCE).toURI()));
-    // TODO - Deal with command line args, or pass them along to Keno instance.
-  }
+  public static void main(String[] args) {
 
-  /**
-   * Initializes Keno instance by creating the payout table and (eventually)
-   * creating a number pool, which will be shuffled and drawn from in each play.
-   *  
-   * @param payoutsPath     location of payout file.
-   * @throws IOException    if payout file cannot be found or read.
-   */
-  public Keno(Path payoutsPath) throws IOException {
-    payoutTable = new PayoutTable(payoutsPath);
-    // TODO - Generate number pool. 
-  }
+    try {
+      InputStreamReader isr = new InputStreamReader(System.in);
+      BufferedReader br = new BufferedReader(isr);
+      String line = br.readLine();
+      strs = line.trim().split(" ");
+      userSelection = new int[15];
 
-  /**
-   * Checks <code>int</code> array of picks (which <strong>must</strong> already
-   * be sorted) for validity. If any picks are less that {@link #MIN_VALUE} or
-   * greater than {@link #MAX_VALUE|, or if any picks are duplicated, then the 
-   * picks are considered invalid.
-   *  
-   * @param sortedPicks   values picked in Keno play.
-   * @return              <code>true</code> if picks are valid; false otherwise.
-   */
-  protected boolean picksAreValid(int[] sortedPicks) {
-    int previousPick = Integer.MIN_VALUE;
-    boolean valid = true;
-    if (sortedPicks.length > payoutTable.maxPickSize()) {
-      valid = false;
-    } else {
-      for (int pick : sortedPicks) {
-        if (pick == previousPick || pick < MIN_VALUE || pick > MAX_VALUE) {
-          valid = false;
-          break;
+      if (line.equals("-?") || line.equals("-help") || line.equals("-HELP") || line
+          .equals("-Help")) {
+        System.out.println(
+            "1. Enter a number between 1 and 80.\n" +
+            "2. There is a max of 15 numbers. \n" +
+            "3. Account starts with $100. \n");
+        System.exit(0);
+      }
+
+      if (line.equals("")) {
+        System.out.println("Please enter a number.");
+      } else {
+        if (strs.length > 15) {
+          System.out.println("Please choose less than 15 numbers.");
+        } else {
+          for (int i = 0; i < strs.length; i++) {
+
+              userSelection[i] = Integer.parseInt(strs[i]);
+
+              if (userSelection[i] > 80 || userSelection[i] < 1) {
+                System.out.println("Invalid Number: " + userSelection[i]);
+
+                for (int j = i + 1; j < strs.length; j++) {
+                  if (strs[i].equals(strs[j])) {
+                    System.out.print("There are duplicate numbers.  Please re-enter.");
+                  }
+                }
+
+//            for (int x = 0; x < strs.length; x++) {
+//              if (strs[x] > 80 || strs[x] == 0) {
+//                System.out.println("Selection has to between 0 and 80.");
+              }
+            }
+          }
         }
-        previousPick = pick;
+
+      if (isInvalid()) {
+        System.out.println("invalid number!");
+      } else {
+        generateAndRandomize();
+      }
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Check if number is invalid.
+   * @return true or false.
+   */
+
+  public static boolean isInvalid() {
+    for (int i = 0; i < strs.length; i++) {
+      for (int j = i + 1; j < strs.length; j++) {
+        if (strs[i].equals(strs[j])) {
+          return true;
+        }
       }
     }
-    return valid;
+    return false;
   }
 
-  
+  /**
+   * Randomize Array List and validate number picks.
+   * Mix up the collection with shuffle command.
+   * Check if number is a winner and display count of wins.
+   */
+  public static void generateAndRandomize() {
+    List<Integer> randomEighty = new ArrayList<>();
+    for (int i = 1; i <= 80; i++) {
+      randomEighty.add(i);
+    }
 
+    Collections.shuffle(randomEighty);
+    for (int i = 0; i < 20; i++) {
+      computerSelection.add(randomEighty.get(i));
+    }
+
+    for (int i = 0; i < userSelection.length; i++) {
+      if (computerSelection.contains(userSelection[i])) {
+        indexWin++;
+      }
+    }
+    System.out.println("Number of wins : " + indexWin);
+  }
 }
